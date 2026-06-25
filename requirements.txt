@@ -7,7 +7,7 @@ langchain-groq==0.3.2
 langgraph==0.4.8
 langgraph-checkpoint==2.0.26
 langgraph-checkpoint-sqlite==2.0.10
-
+langgraph-checkpoint==2.0.26
 tavily-python==0.7.3
 
 python-dotenv==1.1.0
