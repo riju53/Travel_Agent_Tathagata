@@ -1,428 +1,367 @@
 import os
 import requests
+import sqlite3
 import streamlit as st
 
 from dotenv import load_dotenv
 from tavily import TavilyClient
 
 from langchain_groq import ChatGroq
+
 from langchain_core.messages import (
-HumanMessage,
-AIMessage,
-BaseMessage,
-SystemMessage
+    HumanMessage,
+    AIMessage,
+    BaseMessage,
+    SystemMessage
 )
 
 from langgraph.graph import (
-StateGraph,
-START,
-END,
-add_messages
+    StateGraph,
+    START,
+    END,
+    add_messages
 )
+
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from typing import TypedDict, Annotated
 
-# =====================================================
-
-# LOAD ENVIRONMENT VARIABLES
-
-# =====================================================
+# ====================================================
+# LOAD ENV
+# ====================================================
 
 load_dotenv()
 
-AVIATIONSTACK_API_KEY = os.getenv("AVIATIONSTACK_API_KEY")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+flight_api_key = os.getenv("AVIATIONSTACK_API_KEY")
+groq_api_key = os.getenv("GROQ_API_KEY")
+tavily_api_key = os.getenv("TAVILY_API_KEY")
 
-# =====================================================
-
-# STREAMLIT PAGE CONFIG
-
-# =====================================================
+# ====================================================
+# STREAMLIT CONFIG
+# ====================================================
 
 st.set_page_config(
-page_title="AI Travel Planner",
-page_icon="✈️",
-layout="wide"
+    page_title="AI Travel Planner",
+    page_icon="✈️",
+    layout="wide"
 )
 
-st.title("✈️ AI Travel Planner")
+st.title("🌍 AI Travel Planner")
 st.markdown(
-"Plan trips using LangGraph + Groq + Tavily + AviationStack"
+    "Plan your complete trip using LangGraph + Groq + Tavily + AviationStack"
 )
 
-# =====================================================
-
+# ====================================================
 # FLIGHT SEARCH
-
-# =====================================================
+# ====================================================
 
 def search_flights(query):
 
-```
-url = "https://api.aviationstack.com/v1/flights"
+    url = "https://api.aviationstack.com/v1/flights"
 
-params = {
-    "access_key": AVIATIONSTACK_API_KEY,
-    "limit": 5
-}
+    params = {
+        "access_key": flight_api_key,
+        "limit": 5
+    }
 
-try:
-    response = requests.get(url, params=params)
-    data = response.json()
+    try:
 
-    flights = []
+        response = requests.get(url, params=params)
 
-    if "data" in data and len(data["data"]) > 0:
+        data = response.json()
 
-        for flight in data["data"][:5]:
+        flights = []
 
-            airline = (
-                flight.get("airline", {})
-                .get("name", "Unknown")
-            )
+        if "data" in data:
 
-            flight_number = (
-                flight.get("flight", {})
-                .get("number", "Unknown")
-            )
+            for flight in data["data"][:5]:
 
-            departure_airport = (
-                flight.get("departure", {})
-                .get("airport", "Unknown")
-            )
+                airline = flight["airline"]["name"]
 
-            departure_time = (
-                flight.get("departure", {})
-                .get("scheduled", "Unknown")
-            )
+                flight_number = flight["flight"]["number"]
 
-            arrival_airport = (
-                flight.get("arrival", {})
-                .get("airport", "Unknown")
-            )
+                departure_airport = flight["departure"]["airport"]
 
-            arrival_time = (
-                flight.get("arrival", {})
-                .get("scheduled", "Unknown")
-            )
+                departure_time = flight["departure"]["scheduled"]
 
-            flights.append(
-                f"""
-```
+                arrival_airport = flight["arrival"]["airport"]
 
+                arrival_time = flight["arrival"]["scheduled"]
+
+                flights.append(
+                    f"""
 Airline: {airline}
 Flight Number: {flight_number}
 Departure Airport: {departure_airport}
 Departure Time: {departure_time}
 Arrival Airport: {arrival_airport}
 Arrival Time: {arrival_time}
-"""
-)
+                    """
+                )
 
-```
-        return "\n\n".join(flights)
+            return "\n\n".join(flights)
 
-    return "No flight information found."
+        return "No flights found."
 
-except Exception as e:
-    return f"Flight Search Error: {str(e)}"
-```
+    except Exception as e:
+        return f"Flight API Error: {str(e)}"
 
-# =====================================================
 
+# ====================================================
 # TAVILY SEARCH
+# ====================================================
 
-# =====================================================
-
-tavily_client = TavilyClient(
-api_key=TAVILY_API_KEY
-)
+client = TavilyClient(api_key=tavily_api_key)
 
 def tavily_search(query):
 
-```
-try:
+    try:
 
-    response = tavily_client.search(
-        query=query,
-        max_results=5
-    )
+        response = client.search(
+            query=query,
+            max_results=5
+        )
 
-    results = []
+        results = []
 
-    for i, item in enumerate(
-        response["results"], start=1
-    ):
+        for i, r in enumerate(response["results"], 1):
 
-        title = item.get("title", "")
-        content = item.get("content", "")
-        url = item.get("url", "")
+            title = r.get("title", "")
+            url = r.get("url", "")
+            snippet = r.get("content", "")
 
-        results.append(
-            f"""
-```
-
+            results.append(
+                f"""
 {i}. {title}
 
-{content}
+{snippet}
 
 {url}
-"""
-)
+                """
+            )
 
-```
-    return "\n\n".join(results)
+        return "\n\n".join(results)
 
-except Exception as e:
-    return f"Tavily Search Error: {str(e)}"
-```
+    except Exception as e:
+        return str(e)
 
-# =====================================================
 
+# ====================================================
 # LLM
-
-# =====================================================
+# ====================================================
 
 llm = ChatGroq(
-model="llama-3.3-70b-versatile",
-api_key=GROQ_API_KEY
+    model="llama-3.3-70b-versatile",
+    api_key=groq_api_key
 )
 
-# =====================================================
+# ====================================================
+# SQLITE CHECKPOINTER
+# ====================================================
 
+conn = sqlite3.connect(
+    "graph.db",
+    check_same_thread=False
+)
+
+checkpointer = SqliteSaver(conn)
+
+# ====================================================
 # STATE
-
-# =====================================================
+# ====================================================
 
 class TravelState(TypedDict):
 
-```
-messages: Annotated[
-    list[BaseMessage],
-    add_messages
-]
+    messages: Annotated[list[BaseMessage], add_messages]
 
-user_query: str
+    user_query: str
 
-flight_results: str
+    flight_results: str
 
-hotel_results: str
+    hotel_results: str
 
-itinerary: str
+    itinerary: str
 
-llm_calls: int
-```
+    llm_calls: int
 
-# =====================================================
 
-# FLIGHT AGENT
-
-# =====================================================
+# ====================================================
+# AGENTS
+# ====================================================
 
 def flight_agent(state: TravelState):
 
-```
-flights = search_flights(
-    state["user_query"]
-)
+    flight_data = search_flights(
+        state["user_query"]
+    )
 
-return {
-    "flight_results": flights,
-    "messages": [
-        AIMessage(
-            content="Flight search completed."
-        )
-    ],
-    "llm_calls": state["llm_calls"] + 1
-}
-```
+    return {
+        "flight_results": flight_data,
+        "messages": [
+            AIMessage(
+                content="Flight information collected."
+            )
+        ],
+        "llm_calls": state["llm_calls"] + 1
+    }
 
-# =====================================================
-
-# HOTEL AGENT
-
-# =====================================================
 
 def hotel_agent(state: TravelState):
 
-```
-hotel_query = (
-    f"Best hotels for "
-    f"{state['user_query']}"
-)
+    hotel_data = tavily_search(
+        f"Best hotels for {state['user_query']}"
+    )
 
-hotels = tavily_search(
-    hotel_query
-)
+    return {
+        "hotel_results": hotel_data,
+        "messages": [
+            AIMessage(
+                content="Hotel information collected."
+            )
+        ],
+        "llm_calls": state["llm_calls"] + 1
+    }
 
-return {
-    "hotel_results": hotels,
-    "messages": [
-        AIMessage(
-            content="Hotel search completed."
-        )
-    ],
-    "llm_calls": state["llm_calls"] + 1
-}
-```
-
-# =====================================================
-
-# ITINERARY AGENT
-
-# =====================================================
 
 def itinerary_agent(state: TravelState):
 
-```
-prompt = f"""
-```
-
-Create a detailed travel itinerary.
+    prompt = f"""
+Create a complete travel itinerary.
 
 USER REQUEST:
 {state['user_query']}
 
-FLIGHT INFORMATION:
+FLIGHTS:
 {state['flight_results']}
 
-HOTEL INFORMATION:
+HOTELS:
 {state['hotel_results']}
 """
 
-```
-response = llm.invoke([
-    SystemMessage(
-        content="You are an expert travel planner."
-    ),
-    HumanMessage(content=prompt)
-])
+    response = llm.invoke([
+        SystemMessage(
+            content="You are a professional travel planner."
+        ),
+        HumanMessage(content=prompt)
+    ])
 
-return {
-    "itinerary": response.content,
-    "messages": [response],
-    "llm_calls": state["llm_calls"] + 1
-}
-```
+    return {
+        "itinerary": response.content,
+        "messages": [response],
+        "llm_calls": state["llm_calls"] + 1
+    }
 
-# =====================================================
-
-# FINAL AGENT
-
-# =====================================================
 
 def final_agent(state: TravelState):
 
-```
-prompt = f"""
-```
+    prompt = f"""
+Create a final travel recommendation.
 
-Generate the final travel recommendation.
-
-Flight Information:
+Flights:
 {state['flight_results']}
 
-Hotel Information:
+Hotels:
 {state['hotel_results']}
 
-Travel Itinerary:
+Itinerary:
 {state['itinerary']}
 """
 
-```
-response = llm.invoke([
-    HumanMessage(content=prompt)
-])
+    response = llm.invoke(
+        [HumanMessage(content=prompt)]
+    )
 
-return {
-    "messages": [response],
-    "llm_calls": state["llm_calls"] + 1
-}
-```
+    return {
+        "messages": [response],
+        "llm_calls": state["llm_calls"] + 1
+    }
 
-# =====================================================
 
-# BUILD GRAPH
-
-# =====================================================
+# ====================================================
+# GRAPH
+# ====================================================
 
 graph = StateGraph(TravelState)
 
 graph.add_node(
-"flight_agent",
-flight_agent
+    "flight_agent",
+    flight_agent
 )
 
 graph.add_node(
-"hotel_agent",
-hotel_agent
+    "hotel_agent",
+    hotel_agent
 )
 
 graph.add_node(
-"itinerary_agent",
-itinerary_agent
+    "itinerary_agent",
+    itinerary_agent
 )
 
 graph.add_node(
-"final_agent",
-final_agent
+    "final_agent",
+    final_agent
 )
 
 graph.add_edge(
-START,
-"flight_agent"
+    START,
+    "flight_agent"
 )
 
 graph.add_edge(
-"flight_agent",
-"hotel_agent"
+    "flight_agent",
+    "hotel_agent"
 )
 
 graph.add_edge(
-"hotel_agent",
-"itinerary_agent"
+    "hotel_agent",
+    "itinerary_agent"
 )
 
 graph.add_edge(
-"itinerary_agent",
-"final_agent"
+    "itinerary_agent",
+    "final_agent"
 )
 
 graph.add_edge(
-"final_agent",
-END
+    "final_agent",
+    END
 )
 
-travel_graph = graph.compile()
+travel_app = graph.compile(
+    checkpointer=checkpointer
+)
 
-# =====================================================
-
+# ====================================================
 # UI
+# ====================================================
 
-# =====================================================
+with st.sidebar:
+
+    st.header("⚙️ Settings")
+
+    thread_id = st.text_input(
+        "Session ID",
+        value="user_tathagata"
+    )
 
 user_query = st.text_area(
-"Enter Travel Request",
-placeholder="Example: Plan a 5-day trip to Paris with flight and hotel suggestions."
+    "Enter Travel Request",
+    placeholder="Plan a 5 day trip to Paris..."
 )
 
 if st.button("Generate Travel Plan"):
 
-```
-if not user_query.strip():
+    with st.spinner("Planning your trip..."):
 
-    st.warning(
-        "Please enter a travel request."
-    )
+        config = {
+            "configurable": {
+                "thread_id": thread_id
+            }
+        }
 
-else:
+        result = travel_app.invoke(
 
-    with st.spinner(
-        "Generating travel plan..."
-    ):
-
-        result = travel_graph.invoke(
             {
                 "messages": [
                     HumanMessage(
@@ -434,25 +373,19 @@ else:
                 "hotel_results": "",
                 "itinerary": "",
                 "llm_calls": 0
-            }
+            },
+
+            config=config
+
         )
 
-        st.success(
-            "Travel Plan Generated"
-        )
+        st.success("Travel Plan Generated")
 
-        final_response = (
-            result["messages"][-1]
-            .content
-        )
+        st.subheader("📋 Final Response")
 
-        st.subheader(
-            "📋 Final Travel Plan"
-        )
+        final_message = result["messages"][-1].content
 
-        st.markdown(
-            final_response
-        )
+        st.markdown(final_message)
 
         st.divider()
 
@@ -460,4 +393,3 @@ else:
             "LLM Calls",
             result["llm_calls"]
         )
-```
