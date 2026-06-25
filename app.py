@@ -347,7 +347,7 @@ with st.sidebar:
 
 user_query = st.text_area(
     "Enter Travel Request",
-    placeholder="Plan a 5 day trip to Paris..."
+    placeholder="plane 7 days Japan trip include flights, hotel  and sightseen under 2lakhs..."
 )
 
 if st.button("Generate Travel Plan"):
