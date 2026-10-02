@@ -6,7 +6,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from tavily import TavilyClient
 
-from langchain_groq import ChatGroq
+#from langchain_groq import ChatGroq
 
 from langchain_core.messages import (
     HumanMessage,
@@ -33,7 +33,7 @@ from typing import TypedDict, Annotated
 load_dotenv()
 
 flight_api_key = os.getenv("AVIATIONSTACK_API_KEY")
-groq_api_key = os.getenv("GROQ_API_KEY")
+#groq_api_key = os.getenv("GROQ_API_KEY")
 tavily_api_key = os.getenv("TAVILY_API_KEY")
 
 # ====================================================
@@ -150,10 +150,19 @@ def tavily_search(query):
 # LLM
 # ====================================================
 
-llm = ChatGroq(
-    model="openai/gpt-oss-120b",
-    api_key=groq_api_key
+# llm = ChatGroq(
+#     model="openai/gpt-oss-120b",
+#     api_key=groq_api_key
+# )
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+llm = HuggingFaceEndpoint(
+    repo_id = "Qwen/Qwen3-32B",
+    huggingfacehub_api_token = "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",
+    max_new_tokens = 2048
 )
+from langchain_huggingface import ChatHuggingFace
+model = ChatHuggingFace(
+    llm =llm
 
 # ====================================================
 # SQLITE CHECKPOINTER
@@ -238,7 +247,7 @@ HOTELS:
 {state['hotel_results']}
 """
 
-    response = llm.invoke([
+    response = model.invoke([
         SystemMessage(
             content="You are a professional travel planner."
         ),
@@ -267,7 +276,7 @@ Itinerary:
 {state['itinerary']}
 """
 
-    response = llm.invoke(
+    response = model.invoke(
         [HumanMessage(content=prompt)]
     )
 
