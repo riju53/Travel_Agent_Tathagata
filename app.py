@@ -169,7 +169,7 @@ def tavily_search(query):
 # model = ChatHuggingFace(
 #     llm =llm
 #)
-llm = ChatGroq(
+model = ChatGroq(
     model="openai/gpt-oss-120b",
     api_key=groq_api_key
 )
