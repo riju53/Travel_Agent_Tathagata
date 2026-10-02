@@ -163,7 +163,7 @@ llm = HuggingFaceEndpoint(
 from langchain_huggingface import ChatHuggingFace
 model = ChatHuggingFace(
     llm =llm
-
+)
 # ====================================================
 # SQLITE CHECKPOINTER
 # ====================================================
