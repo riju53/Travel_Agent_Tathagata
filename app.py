@@ -41,7 +41,7 @@ tavily_api_key = st.secrets["TAVILY_API_KEY"]
 #"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"
 
 
-HF_TOKEN = st.secrets["HF_TOKEN"]
+HF_TOKEN = st.secrets["HUGGINGFACEHUB_ACCESS_TOKEN"]
 
 # ====================================================
 # STREAMLIT CONFIG
