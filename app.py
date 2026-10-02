@@ -38,6 +38,8 @@ flight_api_key = "1ac6e48061b290ae60f8d42e84efcb5d"
 tavily_api_key = "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"
 #os.getenv("TAVILY_API_KEY")
 
+HF_TOKEN = st.secrets["HF_TOKEN"]
+
 # ====================================================
 # STREAMLIT CONFIG
 # ====================================================
@@ -159,7 +161,7 @@ def tavily_search(query):
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 llm = HuggingFaceEndpoint(
     repo_id = "Qwen/Qwen3-32B",
-    huggingfacehub_api_token = "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",
+    huggingfacehub_api_token = HF_TOKEN,
     max_new_tokens = 2048
 )
 from langchain_huggingface import ChatHuggingFace
