@@ -354,14 +354,14 @@ travel_app = graph.compile(
 # UI
 # ====================================================
 
-with st.sidebar:
+# with st.sidebar:
 
-    st.header("⚙️ Settings")
+#     st.header("⚙️ Settings")
 
-    thread_id = st.text_input(
-        "Session ID",
-        value="user_tathagata"
-    )
+#     thread_id = st.text_input(
+#         "Session ID",
+#         value="user_tathagata"
+#     )
 
 user_query = st.text_area(
     "Enter Travel Request",
