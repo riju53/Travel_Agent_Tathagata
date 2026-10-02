@@ -35,7 +35,7 @@ load_dotenv()
 #flight_api_key = os.getenv("AVIATIONSTACK_API_KEY")
 flight_api_key = st.secrets["AVIATIONSTACK_API_KEY"]
 #flight_api_key = "1ac6e48061b290ae60f8d42e84efcb5d"
-#groq_api_key = os.getenv("GROQ_API_KEY")
+groq_api_key = os.getenv("GROQ_API_KEY")
 #tavily_api_key = os.getenv("TAVILY_API_KEY")
 tavily_api_key = st.secrets["TAVILY_API_KEY"]
 #"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"
@@ -157,20 +157,21 @@ def tavily_search(query):
 # LLM
 # ====================================================
 
-# llm = ChatGroq(
-#     model="openai/gpt-oss-120b",
-#     api_key=groq_api_key
+
+# from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+# llm = HuggingFaceEndpoint(
+#     #repo_id = "Qwen/Qwen3-32B",
+#     repo_id = "openai/gpt-oss-120b",
+#     huggingfacehub_api_token = HF_TOKEN,
+#     max_new_tokens = 2048
 # )
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
-llm = HuggingFaceEndpoint(
-    #repo_id = "Qwen/Qwen3-32B",
-    repo_id = "openai/gpt-oss-120b",
-    huggingfacehub_api_token = HF_TOKEN,
-    max_new_tokens = 2048
-)
-from langchain_huggingface import ChatHuggingFace
-model = ChatHuggingFace(
-    llm =llm
+# from langchain_huggingface import ChatHuggingFace
+# model = ChatHuggingFace(
+#     llm =llm
+#)
+llm = ChatGroq(
+    model="openai/gpt-oss-120b",
+    api_key=groq_api_key
 )
 # ====================================================
 # SQLITE CHECKPOINTER
