@@ -151,7 +151,7 @@ def tavily_search(query):
 # ====================================================
 
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-120b",
     api_key=groq_api_key
 )
 
