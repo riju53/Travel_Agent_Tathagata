@@ -32,9 +32,11 @@ from typing import TypedDict, Annotated
 
 load_dotenv()
 
-flight_api_key = os.getenv("AVIATIONSTACK_API_KEY")
+#flight_api_key = os.getenv("AVIATIONSTACK_API_KEY")
+flight_api_key = "1ac6e48061b290ae60f8d42e84efcb5d"
 #groq_api_key = os.getenv("GROQ_API_KEY")
-tavily_api_key = os.getenv("TAVILY_API_KEY")
+tavily_api_key = "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"
+#os.getenv("TAVILY_API_KEY")
 
 # ====================================================
 # STREAMLIT CONFIG
