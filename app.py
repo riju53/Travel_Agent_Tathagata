@@ -30,7 +30,7 @@ from typing import TypedDict, Annotated
 # LOAD ENV
 # ====================================================
 
-load_dotenv()
+#load_dotenv()
 
 #flight_api_key = os.getenv("AVIATIONSTACK_API_KEY")
 flight_api_key = st.secrets["AVIATIONSTACK_API_KEY"]
