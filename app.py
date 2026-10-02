@@ -407,7 +407,7 @@ if st.button("Generate Travel Plan"):
 
         st.divider()
 
-        st.metric(
-            "LLM Calls",
-            result["llm_calls"]
-        )
+        # st.metric(
+        #     "LLM Calls",
+        #     result["llm_calls"]
+        # )
