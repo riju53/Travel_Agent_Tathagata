@@ -163,7 +163,8 @@ def tavily_search(query):
 # )
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 llm = HuggingFaceEndpoint(
-    repo_id = "Qwen/Qwen3-32B",
+    #repo_id = "Qwen/Qwen3-32B",
+    repo_id = "openai/gpt-oss-120b",
     huggingfacehub_api_token = HF_TOKEN,
     max_new_tokens = 2048
 )
