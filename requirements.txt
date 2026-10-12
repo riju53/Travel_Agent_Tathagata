@@ -11,7 +11,7 @@ tavily-python==0.7.26
 python-dotenv==1.2.2
 requests==2.34.2
 psycopg-binary==3.3.4
-
+langchain-groq
 sqlite-utils==3.38
 
 #pydantic>=2.10.0
